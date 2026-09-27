@@ -1,0 +1,134 @@
+import argparse
+import json
+import sqlite3
+from .importer import import_snapshot
+from .store import Commons
+
+
+def main():
+    parser = argparse.ArgumentParser(description="BP Commons — inspectable ecosystem evidence")
+    parser.add_argument("--db", default="data/commons.sqlite")
+    commands = parser.add_subparsers(dest="command", required=True)
+    load = commands.add_parser("import", help="Import a complete export and retain history")
+    load.add_argument("source", help="Directory containing people, evidence, and connections JSONL")
+    refresh = commands.add_parser("refresh", help="Refresh from a complete export and report changes")
+    refresh.add_argument("source")
+    history = commands.add_parser("history")
+    history.add_argument("--limit", type=int, default=20)
+    changes = commands.add_parser("changes")
+    changes.add_argument("snapshot_id")
+    changes.add_argument("--limit", type=int, default=20)
+    changes.add_argument("--offset", type=int, default=0)
+    commands.add_parser("stats")
+    search = commands.add_parser("search")
+    search.add_argument("query")
+    search.add_argument("--limit", type=int, default=10)
+    search.add_argument("--collector")
+    unresolved = commands.add_parser("unresolved", help="Inspect relationships needing identity review")
+    unresolved.add_argument("--limit", type=int, default=20)
+    unresolved.add_argument("--offset", type=int, default=0)
+    show = commands.add_parser("show")
+    show.add_argument("record_id")
+    show.add_argument("--snapshot")
+    compare = commands.add_parser("compare", help="Reconcile two source-scoped JSON datasets")
+    compare.add_argument("left")
+    compare.add_argument("right")
+    compare.add_argument("--audit-db", default="data/reconciliation.sqlite")
+    compare.add_argument("--output")
+    review = commands.add_parser("review", help="Record an auditable pair decision")
+    review.add_argument("run_id")
+    review.add_argument("left_id")
+    review.add_argument("right_id")
+    review.add_argument("verdict", choices=["same", "different", "unsure"])
+    review.add_argument("--reviewer", required=True)
+    review.add_argument("--reason", required=True)
+    review.add_argument("--audit-db", default="data/reconciliation.sqlite")
+    run = commands.add_parser("comparison")
+    run.add_argument("run_id")
+    run.add_argument("--audit-db", default="data/reconciliation.sqlite")
+    run.add_argument("--status", choices=["matched", "possible_match", "unmatched", "incomplete"])
+    run.add_argument("--limit", type=int, default=20)
+    run.add_argument("--offset", type=int, default=0)
+    pair = commands.add_parser("pair", help="Inspect original records before reviewing a match")
+    pair.add_argument("run_id")
+    pair.add_argument("left_id")
+    pair.add_argument("right_id")
+    pair.add_argument("--audit-db", default="data/reconciliation.sqlite")
+    export = commands.add_parser("export-dataset")
+    export.add_argument("dataset_id")
+    export.add_argument("output")
+    export.add_argument("--collector")
+    ror = commands.add_parser("ror", help="Fetch and preserve public ROR organization candidates")
+    ror.add_argument("query")
+    ror.add_argument("output")
+    benchmark = commands.add_parser("evaluate")
+    benchmark.add_argument("left")
+    benchmark.add_argument("right")
+    benchmark.add_argument("labels")
+    oa = commands.add_parser("openalex-institution", help="Fetch one public institution and preserve its source response")
+    oa.add_argument("institution_id")
+    oa.add_argument("output")
+    args = parser.parse_args()
+    try:
+        if args.command in {"compare", "review", "comparison", "pair", "export-dataset", "ror", "evaluate", "openalex-institution"}:
+            from pathlib import Path
+            from .datasets import load_dataset, from_commons
+            from .reviews import Reconciliation
+            from .external import ror_lookup, openalex_institution
+            if args.command == "openalex-institution":
+                result = openalex_institution(args.institution_id, args.output)
+            elif args.command == "evaluate":
+                from .evaluate import evaluate
+                result = evaluate(load_dataset(args.left), load_dataset(args.right), json.loads(Path(args.labels).read_text()))
+            elif args.command == "ror":
+                result = ror_lookup(args.query, args.output)
+            elif args.command == "export-dataset":
+                result = from_commons(args.db, args.dataset_id, args.collector)
+                with Path(args.output).open('x') as output:
+                    json.dump(result, output, ensure_ascii=False, indent=2)
+                result = {"output": args.output, "records": len(result["records"])}
+            else:
+                with Reconciliation(args.audit_db) as audit:
+                    if args.command == "compare":
+                        result = audit.compare(load_dataset(args.left), load_dataset(args.right))
+                        if args.output:
+                            with Path(args.output).open('x') as output:
+                                json.dump(result, output, ensure_ascii=False, indent=2)
+                            result = {"run_id": result['run_id'], "summary": result['summary'], "output": args.output}
+                    elif args.command == "pair":
+                        result = audit.pair(args.run_id, args.left_id, args.right_id)
+                    elif args.command == "review":
+                        result = audit.review(args.run_id, args.left_id, args.right_id, args.verdict, args.reviewer, args.reason)
+                    else:
+                        if not 1 <= args.limit <= 100 or args.offset < 0:
+                            raise ValueError("limit must be 1–100 and offset nonnegative")
+                        result = audit.run(args.run_id)
+                        rows = [r for r in result['results'] if not args.status or r['status'] == args.status]
+                        result['filtered_count'] = len(rows)
+                        result['results'] = rows[args.offset:args.offset + args.limit]
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return
+        if args.command in {"import", "refresh"}:
+            report = import_snapshot(args.source, args.db)
+        with Commons(args.db) as commons:
+            if args.command in {"import", "refresh"}:
+                result = {**report, "stats": commons.stats()}
+            elif args.command == "stats":
+                result = commons.stats()
+            elif args.command == "history":
+                result = commons.history(limit=args.limit)
+            elif args.command == "changes":
+                result = commons.changes(args.snapshot_id, limit=args.limit, offset=args.offset)
+            elif args.command == "search":
+                result = commons.search(args.query, limit=args.limit, collector=args.collector)
+            elif args.command == "unresolved":
+                result = commons.unresolved(limit=args.limit, offset=args.offset)
+            else:
+                result = commons.profile(args.record_id, snapshot_id=args.snapshot)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+    except (ValueError, KeyError, OSError, sqlite3.Error) as error:
+        parser.exit(1, f"bp-commons: {error}\n")
+
+
+if __name__ == "__main__":
+    main()

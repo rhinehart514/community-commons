@@ -1,0 +1,54 @@
+{
+  "dataset_id": "people-right",
+  "entity_type": "person",
+  "source": "https://example.org/people-right",
+  "observed_at": "2026-09-26",
+  "coverage": {
+    "complete": true,
+    "scope": "Entire fictional fixture",
+    "expected_records": 5
+  },
+  "records": [
+    {
+      "record_id": "r1",
+      "name": "A. Moreno",
+      "source_ref": "https://example.org/records/r1",
+      "identifiers": {
+        "github": [
+          "alex-moreno-example"
+        ]
+      }
+    },
+    {
+      "record_id": "r2",
+      "name": "Sam Lin",
+      "source_ref": "https://example.org/records/r2",
+      "identifiers": {}
+    },
+    {
+      "record_id": "r3",
+      "name": "Taylor Reed",
+      "source_ref": "https://example.org/records/r3",
+      "identifiers": {}
+    },
+    {
+      "record_id": "r4",
+      "name": "Taylor Reed",
+      "source_ref": "https://example.org/records/r4",
+      "identifiers": {}
+    },
+    {
+      "record_id": "r5",
+      "name": "Morgan Wells",
+      "source_ref": "https://example.org/records/r5",
+      "identifiers": {
+        "github": [
+          "morgan-example"
+        ],
+        "orcid": [
+          "0000-0000-0000-002X"
+        ]
+      }
+    }
+  ]
+}

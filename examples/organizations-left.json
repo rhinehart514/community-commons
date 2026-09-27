@@ -1,0 +1,35 @@
+{
+  "dataset_id": "organizations-left",
+  "entity_type": "organization",
+  "source": "https://example.org/organizations-left",
+  "observed_at": "2026-09-26",
+  "coverage": {
+    "complete": true,
+    "scope": "Entire fictional fixture",
+    "expected_records": 3
+  },
+  "records": [
+    {
+      "record_id": "o1",
+      "name": "Example Research Institute",
+      "source_ref": "https://example.org/records/o1",
+      "identifiers": {
+        "ror": [
+          "01example"
+        ]
+      }
+    },
+    {
+      "record_id": "o2",
+      "name": "Northstar Labs",
+      "source_ref": "https://example.org/records/o2",
+      "identifiers": {}
+    },
+    {
+      "record_id": "o3",
+      "name": "Unrelated Services",
+      "source_ref": "https://example.org/records/o3",
+      "identifiers": {}
+    }
+  ]
+}

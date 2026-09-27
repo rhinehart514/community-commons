@@ -1,0 +1,32 @@
+{
+  "dataset_id": "organizations-right",
+  "entity_type": "organization",
+  "source": "https://example.org/organizations-right",
+  "observed_at": "2026-09-26",
+  "coverage": {
+    "complete": true,
+    "scope": "Entire fictional fixture",
+    "expected_records": 2
+  },
+  "records": [
+    {
+      "record_id": "t1",
+      "name": "ERI",
+      "source_ref": "https://example.org/records/t1",
+      "identifiers": {
+        "ror": [
+          "https://ror.org/01example"
+        ]
+      }
+    },
+    {
+      "record_id": "t2",
+      "name": "Northstar Laboratories",
+      "source_ref": "https://example.org/records/t2",
+      "identifiers": {},
+      "aliases": [
+        "Northstar Labs"
+      ]
+    }
+  ]
+}
