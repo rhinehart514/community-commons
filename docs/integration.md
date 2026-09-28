@@ -108,3 +108,9 @@ that app's authentication and authorization; the shipped server is not a public 
 
 Run `python examples/consume.py data/demo` after creating the fictional demo for
 a complete headless integration example. No external requests are made.
+
+## Changes and subscriptions
+
+`ChangeFeed` and `Subscriptions` expose durable pull events and saved discovery
+queries. See [subscriptions](subscriptions.md) for the bounded cycle, consumer
+cursors, targeted planning, and optional local HTTP endpoints.

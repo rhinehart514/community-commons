@@ -101,8 +101,73 @@ def main():
     path.add_argument("source")
     path.add_argument("target")
     path.add_argument("--max-hops", type=int, default=4)
+    feed = commands.add_parser("feed", help="Pull replayable changes in collected claims")
+    feed.add_argument("--evidence-db", default="data/enrichment.sqlite")
+    feed.add_argument("--after", type=int, default=0)
+    feed.add_argument("--limit", type=int, default=100)
+    subscription = commands.add_parser("subscription", help="Headless saved queries and bounded enrichment cycles")
+    subscription.add_argument("action", choices=["create", "list", "evaluate", "events", "plan", "cycle", "pause", "resume"])
+    subscription.add_argument("--consumer", required=True)
+    subscription.add_argument("--id")
+    subscription.add_argument("--name")
+    subscription.add_argument("--query-file")
+    subscription.add_argument("--annotations-file")
+    subscription.add_argument("--subscription-db", default="data/subscriptions.sqlite")
+    subscription.add_argument("--evidence-db", default="data/enrichment.sqlite")
+    subscription.add_argument("--after", type=int, default=0)
+    subscription.add_argument("--limit", type=int, default=25)
+    subscription.add_argument("--apply", action="store_true")
+    subscription.add_argument("--max-requests", type=int, default=10)
+    subscription.add_argument("--max-seconds", type=int, default=300)
     args = parser.parse_args()
     try:
+        if args.command == "feed":
+            from .enrichment import Enrichment
+            from .streams import ChangeFeed
+            with Enrichment(args.evidence_db) as evidence:
+                result = ChangeFeed(evidence).read(args.after, args.limit)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return
+        if args.command == "subscription":
+            from pathlib import Path
+            from .subscriptions import Subscriptions
+            from .enrichment import Enrichment
+            from .streams import ChangeFeed
+            with Subscriptions(args.subscription_db) as subscriptions:
+                if args.action == "create":
+                    if not args.query_file:
+                        raise ValueError('Creating a subscription requires --query-file')
+                    result = subscriptions.create(args.consumer, args.name, json.loads(Path(args.query_file).read_text()))
+                elif args.action == "list":
+                    result = subscriptions.list(args.consumer)
+                elif args.action == "events":
+                    result = subscriptions.events(args.consumer, args.after, args.limit)
+                elif args.action in ("pause", "resume"):
+                    result = subscriptions.pause(args.consumer, args.id, args.action == "pause")
+                else:
+                    with Commons(args.db) as store, Enrichment(args.evidence_db) as evidence:
+                        annotations = json.loads(Path(args.annotations_file).read_text()) if args.annotations_file else None
+                        if annotations is not None and not isinstance(annotations, dict):
+                            raise ValueError('Annotation input must be a profile ID mapping')
+                        if args.action == "plan":
+                            result = subscriptions.plan(args.consumer, args.id, store, evidence, args.limit, args.apply)
+                        elif args.action == "cycle":
+                            saved = subscriptions.get(args.consumer, args.id)
+                            if saved['query']['mode'] != 'all' and annotations is None:
+                                raise ValueError('This query requires --annotations-file')
+                            if saved['paused']:
+                                result = {'paused': True}
+                            else:
+                                if not 1 <= args.max_requests <= 100000 or not 1 <= args.max_seconds <= 86400:
+                                    raise ValueError('Invalid worker budget')
+                                plan = subscriptions.plan(args.consumer, args.id, store, evidence, args.limit, True)
+                                worker = evidence.run(args.max_requests, args.max_seconds, targets=[(t['provider'], t['subject']) for t in plan['tasks']])
+                                changes = ChangeFeed(evidence).sync()
+                                result = {'plan': plan, 'worker': worker, 'claim_changes': changes, 'evaluation': subscriptions.evaluate(args.consumer, args.id, store, evidence, annotations)}
+                        else:
+                            result = subscriptions.evaluate(args.consumer, args.id, store, evidence, annotations)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return
         if args.command == "paths":
             from .paths import paths
             with Commons(args.db) as store:

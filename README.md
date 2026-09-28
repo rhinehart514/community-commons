@@ -26,6 +26,23 @@ workspace store. Source discovery, history filtering, shortlist export, and
 bounded evidence-path queries work without the browser. See the
 [integration contract and runnable example](docs/integration.md).
 
+## Subscribe to evidence changes
+
+Applications can save queries, pull newly qualifying records, and request
+bounded enrichment of relevant records. No notifications are sent automatically.
+
+```sh
+bp-commons subscription create --consumer my-app --name Robotics --query-file examples/subscription-query.json
+bp-commons subscription cycle --consumer my-app --id SUBSCRIPTION_ID --max-requests 10 --max-seconds 300
+bp-commons subscription events --consumer my-app --after 0
+bp-commons feed --after 0
+```
+
+Both feeds use durable cursors; repeat evaluations suppress unchanged results.
+[Subscription contracts, limitations, and Python examples](docs/subscriptions.md).
+After creating the demo below, `python examples/subscriber.py data/demo` runs an
+offline consumer and verifies that the second evaluation emits no duplicate events.
+
 ## Try it without collecting anyone's data
 
 ```sh

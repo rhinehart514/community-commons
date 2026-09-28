@@ -78,3 +78,14 @@ returned paths contain supporting evidence and do not assert social connections.
 Flask is an optional `web` extra. The local inspector and HTTP endpoints are
 adapters over the library, not the product's destination. Hosted consumers own
 identity, authorization, and their interface. See `integration.md` for contracts.
+
+## Query-driven collection
+
+`streams.py` derives an append-only, replayable claim event ledger from committed
+extractions. Per-job heads and event insertion commit together. `subscriptions.py`
+keeps consumer query definitions, result membership, evaluation metadata, and
+pull notifications in a separate private store. Evaluation fingerprints exclude
+fetch timestamps and preserve before/after evidence. Plans select missing or due
+jobs within an existing relevant cohort; bounded cycles restrict the worker to
+those targets. Consumers own scheduling, cursor acknowledgement, authorization,
+and delivery. See `subscriptions.md` for the exact coverage boundaries.

@@ -150,23 +150,31 @@ class Enrichment:
                     skipped += 1
         return {'queued': added, 'invalid_identifiers': skipped}
 
-    def claim_job(self, now):
+    def claim_job(self, now, targets=None):
         with self.db:
             self.db.execute('BEGIN IMMEDIATE')
             # A dead worker's lease eventually becomes eligible again.
             self.db.execute("UPDATE jobs SET status='pending' WHERE status='running' AND lease<=?", (now,))
             self.db.execute("UPDATE jobs SET status='failed',error='LeaseAttemptsExhausted' WHERE status='pending' AND attempts>=5")
-            row = self.db.execute("SELECT * FROM jobs WHERE status='pending' AND due<=? AND attempts<5 ORDER BY id LIMIT 1", (now,)).fetchone()
+            scope, parameters = '', [now]
+            if targets is not None:
+                if not targets:
+                    return None
+                if len(targets) > 1000:
+                    raise ValueError('At most 1000 target jobs per run')
+                scope = " AND (provider || ':' || subject) IN (" + ','.join('?' for _ in targets) + ')'
+                parameters.extend(provider + ':' + subject for provider,subject in targets)
+            row = self.db.execute("SELECT * FROM jobs WHERE status='pending' AND due<=? AND attempts<5" + scope + " ORDER BY id LIMIT 1", parameters).fetchone()
             if not row:
                 return None
             self.db.execute("UPDATE jobs SET status='running',lease=?,attempts=attempts+1 WHERE id=?", (now + 120, row['id']))
             return dict(row)
 
-    def step(self, fetcher=fetch, now=None, refresh_days=30):
+    def step(self, fetcher=fetch, now=None, refresh_days=30, targets=None):
         now = time.time() if now is None else now
         if refresh_days < 1:
             raise ValueError('Refresh interval must be at least one day')
-        job = self.claim_job(now)
+        job = self.claim_job(now, targets)
         if job is None:
             return None
         try:
@@ -208,13 +216,13 @@ class Enrichment:
                 error.close()
             return {'job_id': job['id'], 'status': status, 'error': message, 'stop': throttled}
 
-    def run(self, max_requests=10, max_seconds=300, interval=2, watch=False):
+    def run(self, max_requests=10, max_seconds=300, interval=2, watch=False, targets=None):
         if not 1 <= max_requests <= 100000 or not 1 <= max_seconds <= 86400 or interval < 1:
             raise ValueError('Use 1–100000 requests, 1–86400 seconds, and interval >=1 second')
         deadline = time.monotonic() + max_seconds
         results = []
         while len(results) < max_requests and time.monotonic() < deadline:
-            result = self.step()
+            result = self.step(targets=targets)
             if result is None and not watch:
                 break
             if result:

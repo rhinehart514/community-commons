@@ -73,10 +73,10 @@ class Workspaces:
         return [json.loads(r[0]) for r in self.db.execute('SELECT payload FROM events WHERE workspace_id=? AND profile_id=? ORDER BY id DESC', (workspace, profile_id))]
 
 
-def discover(store, evidence, annotations, query='', collector=None, mode='all', offset=0):
+def discover(store, evidence, annotations, query='', collector=None, mode='all', offset=0, limit=30):
     """Search imported text and latest enriched claims; filter before pagination."""
-    if mode not in ('all', 'new', 'shortlisted', 'dismissed') or offset < 0:
-        raise ValueError('Invalid discovery filter')
+    if mode not in ('all', 'new', 'shortlisted', 'dismissed') or offset < 0 or not 1 <= limit <= 100000:
+        raise ValueError('Invalid discovery filter or limit')
     tokens = re.findall(r'\w+', query, re.UNICODE)
     matches = {}
     if tokens:
@@ -113,4 +113,4 @@ def discover(store, evidence, annotations, query='', collector=None, mode='all',
         item['workspace'] = state
         item['enriched_matches'] = matches.get(item['id'], [])[:5]
         results.append(item)
-    return {'total': len(results), 'profiles': results[offset:offset + 30], 'meaning': 'New means no affirmative known/contacted/participated marker in this workspace; unknown history is not proof of novelty.'}
+    return {'total': len(results), 'profiles': results[offset:offset + limit], 'meaning': 'New means no affirmative known/contacted/participated marker in this workspace; unknown history is not proof of novelty.'}

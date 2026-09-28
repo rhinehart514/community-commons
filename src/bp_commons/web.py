@@ -9,6 +9,8 @@ from .store import Commons
 from .reviews import Reconciliation
 from .workspaces import Workspaces, discover
 from .paths import paths
+from .streams import ChangeFeed
+from .subscriptions import Subscriptions
 
 
 def create_app(database, audit_database):
@@ -205,5 +207,49 @@ def create_app(database, audit_database):
     def evidence_paths():
         with Commons(database) as store:
             return paths(store, request.args['source'], request.args['target'])
+
+    subscription_path = Path(audit_database).with_name('subscriptions.sqlite')
+
+    @app.get('/api/feed')
+    def claim_feed():
+        with Enrichment(evidence_path) as evidence:
+            return ChangeFeed(evidence).read(int(request.args.get('after', 0)), int(request.args.get('limit', 100)))
+
+    @app.get('/api/subscriptions')
+    def list_subscriptions():
+        with Subscriptions(subscription_path) as subscriptions:
+            return jsonify(subscriptions.list(request.args['consumer']))
+
+    @app.post('/api/subscriptions')
+    def create_subscription():
+        data = body()
+        with Subscriptions(subscription_path) as subscriptions:
+            return subscriptions.create(data.get('consumer'), data.get('name'), data.get('query'))
+
+    @app.get('/api/subscription-events')
+    def subscription_events():
+        with Subscriptions(subscription_path) as subscriptions:
+            return subscriptions.events(request.args['consumer'], int(request.args.get('after', 0)), int(request.args.get('limit', 100)))
+
+    @app.post('/api/subscriptions/<subscription>/evaluate')
+    def evaluate_subscription(subscription):
+        data = body()
+        annotations = data.get('annotations')
+        if annotations is not None and not isinstance(annotations, dict):
+            raise ValueError('Annotations must be a profile ID mapping')
+        with Subscriptions(subscription_path) as subscriptions, Commons(database) as store, Enrichment(evidence_path) as evidence:
+            return subscriptions.evaluate(data.get('consumer'), subscription, store, evidence, annotations)
+
+    @app.post('/api/subscriptions/<subscription>/plan')
+    def plan_subscription(subscription):
+        data = body()
+        with Subscriptions(subscription_path) as subscriptions, Commons(database) as store, Enrichment(evidence_path) as evidence:
+            return subscriptions.plan(data.get('consumer'), subscription, store, evidence, int(data.get('limit', 25)), data.get('apply', False))
+
+    @app.post('/api/subscriptions/<subscription>/pause')
+    def pause_subscription(subscription):
+        data = body()
+        with Subscriptions(subscription_path) as subscriptions:
+            return subscriptions.pause(data.get('consumer'), subscription, data.get('paused'))
 
     return app
