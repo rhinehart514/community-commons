@@ -68,7 +68,7 @@ def build_snapshot(source, database):
             rid = row["record_id"]
             db.execute("INSERT INTO profiles VALUES(?,?,?)", (rid, row.get("collector", ""), dump(row)))
             documents[rid] = [" ".join(str(row.get(k, "")) for k in
-                ("name", "organization", "role", "expertise", "regional_evidence", "geography_scope"))]
+                ("name", "organization", "role", "expertise", "regional_evidence", "geography_scope", "work_evidence"))]
             if key := url_key(row.get("profile_url")):
                 urls[key].add(rid)
             names[(row["name"].strip().casefold(), url_key(row["source_url"]))].add(rid)
@@ -81,10 +81,15 @@ def build_snapshot(source, database):
                 urls[key].add(rid)
             names[(row["name"].strip().casefold(), url_key(row["source_url"]))].add(rid)
         for row in rows(inputs[2], ("subject_name", "relation", "source_url", "evidence")):
-            key = url_key(row.get("subject_url"))
-            candidates = urls.get(key, set()) if key else names.get(
-                (row["subject_name"].strip().casefold(), url_key(row["source_url"])), set())
-            rid = next(iter(candidates)) if len(candidates) == 1 else None
+            if row.get('subject_record_id'):
+                rid = row['subject_record_id']
+                if rid not in documents:
+                    raise ValueError('Relationship references unknown source record')
+            else:
+                key = url_key(row.get("subject_url"))
+                candidates = urls.get(key, set()) if key else names.get(
+                    (row["subject_name"].strip().casefold(), url_key(row["source_url"])), set())
+                rid = next(iter(candidates)) if len(candidates) == 1 else None
             db.execute("INSERT INTO relationships(profile_id,payload) VALUES(?,?)", (rid, dump(row)))
             if rid:
                 documents[rid].append(" ".join(str(row.get(k, "")) for k in

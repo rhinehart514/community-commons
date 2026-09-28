@@ -59,6 +59,11 @@ candidates, and affiliation changes. It makes no network requests.
 
 ## Enrichment loop
 
+For discovery through projects, publications, awards, software, and public
+creative work, see [work-first collection](docs/work-discovery.md). Its separate
+archive retains raw source artifacts, work objects, and named contributions;
+the adapter adds searchable source records without merging people by name.
+
 ```sh
 .venv/bin/bp-commons enrich seed --limit 100
 .venv/bin/bp-commons enrich run --watch --max-requests 100 --max-seconds 600
@@ -109,10 +114,13 @@ to select a review store. Both default to the files in `data/`.
 - Search names, roles, specialties, organizations, and relationship evidence with full-text search.
 - Inspect a profile alongside its supporting observations and documented relationships.
 - Use the same read-only Python interface from another application.
+- Collect credited work through bounded source adapters and preserve original source bytes.
+- Attach work to an existing record by an unambiguous profile URL; otherwise retain a separate source record.
 
-This version is a local evidence store and query engine. Matching needs to
-capabilities, live collector execution, Jev decisions,
-participant availability, and coordination workflows are future layers.
+This package provides the evidence store, collectors, and query engine. Buffalo
+Projects consumes a private hosted snapshot separately. Matching needs to
+capabilities, participant availability, and coordination workflows remain future
+layers; collector runs do not yet execute on a hosted schedule.
 
 ## Dataset reconciliation
 

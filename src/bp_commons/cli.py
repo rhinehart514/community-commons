@@ -13,6 +13,11 @@ def main():
     load.add_argument("source", help="Directory containing people, evidence, and connections JSONL")
     refresh = commands.add_parser("refresh", help="Refresh from a complete export and report changes")
     refresh.add_argument("source")
+    works = commands.add_parser("works", help="Archive public work and named contribution evidence")
+    works.add_argument("action", choices=["ingest", "stats", "export"])
+    works.add_argument("--archive", default="data/works.sqlite")
+    works.add_argument("--source", help="Collected lane directory for ingest")
+    works.add_argument("--output", help="New complete JSONL directory for export")
     history = commands.add_parser("history")
     history.add_argument("--limit", type=int, default=20)
     changes = commands.add_parser("changes")
@@ -121,6 +126,21 @@ def main():
     subscription.add_argument("--max-seconds", type=int, default=300)
     args = parser.parse_args()
     try:
+        if args.command == "works":
+            from .works import Works
+            with Works(args.archive) as archive:
+                if args.action == "ingest":
+                    if not args.source:
+                        raise ValueError('ingest requires --source')
+                    result = archive.ingest(args.source)
+                elif args.action == "export":
+                    if not args.output:
+                        raise ValueError('export requires --output')
+                    result = archive.export(args.db, args.output)
+                else:
+                    result = archive.stats()
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return
         if args.command == "feed":
             from .enrichment import Enrichment
             from .streams import ChangeFeed
