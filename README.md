@@ -7,6 +7,32 @@ projects, resources, and their relationships. Buffalo Projects is its first
 intended consumer. The engine belongs in this repository; application-specific
 interfaces and workflows belong in consuming applications.
 
+## Local web interface
+
+From this repository, install the package and start the workbench:
+
+```sh
+.venv/bin/python -m pip install -e .
+.venv/bin/bp-commons serve
+```
+
+Open **http://127.0.0.1:8765**. Keep the terminal running; Ctrl+C stops the server.
+The interface binds to this computer only and is not a public deployment.
+
+- **Explore people:** search and filter source profiles, open source links, and inspect observations and connections.
+- **Compare & review:** select saved datasets or upload Commons dataset JSON files, inspect candidate pairs, and save a decision with your name and supporting evidence.
+- **Evidence history:** inspect snapshot manifests and paginate through added, changed, or removed records.
+
+Saved reviews do not rewrite a past comparison. Click **Re-run with decisions** to
+create updated results, then export them as JSON. Uploaded data must follow the
+[dataset contract](docs/reconciliation.md); arbitrary spreadsheets are not yet supported.
+Profiles remain source records, and a dataset match does not establish attendance
+or participation. The interface reads the current evidence store and writes only
+the separate reconciliation store. Refreshing the evidence store still uses the CLI.
+
+Use `--db PATH` before `serve` to select an evidence database, or `serve --audit-db PATH`
+to select a review store. Both default to the files in `data/`.
+
 ## Working today
 
 - Import and refresh complete regional-talent exports atomically, retaining every accepted snapshot.

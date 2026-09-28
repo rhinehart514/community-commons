@@ -91,3 +91,24 @@ class Commons:
             "relationships": [json.loads(r[0]) for r in self.connection.execute(
                 "SELECT payload FROM relationships WHERE profile_id=? ORDER BY id", (record_id,))],
         }
+
+    def browse(self, query='', *, collector=None, offset=0, limit=30):
+        if offset < 0 or not 1 <= limit <= 100:
+            raise ValueError('Invalid pagination')
+        tokens = re.findall(r'\w+', query, re.UNICODE)
+        parameters = []
+        source = 'profiles p'
+        where = 'WHERE (? IS NULL OR p.collector=?)'
+        order = 'p.id'
+        if tokens:
+            source += ' JOIN search_index s ON p.id=s.profile_id'
+            where += ' AND search_index MATCH ?'
+            order = 'rank, p.id'
+        parameters.extend([collector, collector])
+        if tokens:
+            parameters.append(' AND '.join('"' + t + '"' for t in tokens))
+        if query.strip() and not tokens:
+            return {'total': 0, 'profiles': []}
+        total = self.connection.execute(f'SELECT count(*) FROM {source} {where}', parameters).fetchone()[0]
+        rows = self.connection.execute(f'SELECT p.id,p.payload FROM {source} {where} ORDER BY {order} LIMIT ? OFFSET ?', [*parameters, limit, offset])
+        return {'total': total, 'profiles': [{'id': r[0], 'record': json.loads(r[1])} for r in rows]}

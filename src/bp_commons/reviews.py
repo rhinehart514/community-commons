@@ -73,3 +73,20 @@ class Reconciliation:
         with self.db:
             self.db.execute('INSERT INTO reviews(payload) VALUES(?)', (canonical(value),))
         return value
+
+    def dataset(self, fingerprint):
+        row = self.db.execute('SELECT payload FROM datasets WHERE digest=?', (fingerprint,)).fetchone()
+        if not row:
+            raise KeyError(fingerprint)
+        return json.loads(row[0])
+
+    def catalog(self):
+        datasets = []
+        for fingerprint, payload in self.db.execute('SELECT digest,payload FROM datasets ORDER BY rowid DESC'):
+            value = json.loads(payload)
+            datasets.append({'digest': fingerprint, 'dataset_id': value['dataset_id'], 'entity_type': value['entity_type'], 'records': len(value['records']), 'observed_at': value['observed_at'], 'coverage': value['coverage']})
+        runs = []
+        for run_id, created_at, payload in self.db.execute('SELECT id,created_at,payload FROM runs ORDER BY rowid DESC'):
+            value = json.loads(payload)
+            runs.append({'run_id': run_id, 'created_at': created_at, 'left_dataset': value['left_dataset'], 'right_dataset': value['right_dataset'], 'summary': value['summary']})
+        return {'datasets': datasets, 'runs': runs}

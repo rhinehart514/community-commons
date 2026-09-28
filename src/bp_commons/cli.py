@@ -68,8 +68,15 @@ def main():
     oa = commands.add_parser("openalex-institution", help="Fetch one public institution and preserve its source response")
     oa.add_argument("institution_id")
     oa.add_argument("output")
+    serve = commands.add_parser("serve", help="Open the local web workbench")
+    serve.add_argument("--port", type=int, default=8765)
+    serve.add_argument("--audit-db", default="data/reconciliation.sqlite")
     args = parser.parse_args()
     try:
+        if args.command == "serve":
+            from .web import create_app
+            create_app(args.db, args.audit_db).run(host="127.0.0.1", port=args.port, debug=False)
+            return
         if args.command in {"compare", "review", "comparison", "pair", "export-dataset", "ror", "evaluate", "openalex-institution"}:
             from pathlib import Path
             from .datasets import load_dataset, from_commons

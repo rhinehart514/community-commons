@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BP Commons · Evidence workbench</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <script defer src="/static/app.js"></script>
+  </head>
+  <body>
+    <aside class="rail">
+      <a class="brand" href="/">bp<span>commons</span></a>
+      <p class="eyebrow">THE EVIDENCE WORKBENCH</p>
+      <nav aria-label="Main navigation">
+        <button data-view="explore" class="active">
+          01 <span>Explore people</span></button
+        ><button data-view="compare">02 <span>Compare & review</span></button
+        ><button data-view="history">03 <span>Evidence history</span></button>
+      </nav>
+      <div class="rail-bottom">
+        <span class="dot"></span> Local workspace
+        <p>
+          Source records. Traceable decisions.<br />A Buffalo Projects
+          experiment.
+        </p>
+      </div>
+    </aside>
+    <main>
+      <header>
+        <span id="section-label" class="eyebrow">01 / EXPLORE</span
+        ><span class="workspace"
+          >BP COMMONS <span> / </span> PRIVATE · LOCAL</span
+        >
+      </header>
+      <div id="notice" role="status" hidden></div>
+      <section id="explore" class="view">
+        <div class="intro">
+          <div>
+            <h1>Find the people.<br /><em>Follow the evidence.</em></h1>
+            <p>
+              Search capabilities, organizations, and names across the collected
+              records.
+            </p>
+          </div>
+          <div id="stats" class="stats"></div>
+        </div>
+        <form id="search-form" class="searchbar">
+          <label class="search-label"
+            ><span class="sr-only">Search people and evidence</span
+            ><input
+              id="query"
+              placeholder="Try robotics, University at Buffalo, or a name…"
+              type="search" /></label
+          ><label
+            ><span class="sr-only">Collection</span
+            ><select id="collector">
+              <option value="">All collections</option>
+            </select></label
+          ><button class="primary">Search ↗</button>
+        </form>
+        <div class="section-line">
+          <span id="result-count">Loading records…</span
+          ><span>Source records ≠ verified identities</span>
+        </div>
+        <div class="workbench">
+          <div>
+            <div id="profiles" class="rows"></div>
+            <div id="profile-pages" class="pagination"></div>
+          </div>
+          <aside id="profile-detail" class="detail">
+            <div class="empty">
+              <span class="large-mark">↗</span>
+              <h2>Every record has a story.</h2>
+              <p>
+                Select a person to inspect the source, observations, and
+                recorded connections.
+              </p>
+            </div>
+          </aside>
+        </div>
+      </section>
+      <section id="compare" class="view" hidden>
+        <div class="intro">
+          <div>
+            <h1>Same person?<br /><em>Show your work.</em></h1>
+            <p>
+              Compare source datasets and record the evidence behind each
+              decision.
+            </p>
+          </div>
+        </div>
+        <details class="new-comparison">
+          <summary>＋ New comparison</summary>
+          <form id="compare-form">
+            <div class="pair-grid">
+              <label
+                >Left dataset<select id="left-dataset" required></select
+                ><span class="muted">Or upload a Commons dataset JSON</span
+                ><input
+                  type="file"
+                  id="left-file"
+                  accept=".json,application/json" /></label
+              ><label
+                >Right dataset<select id="right-dataset" required></select
+                ><span class="muted">Or upload a Commons dataset JSON</span
+                ><input
+                  type="file"
+                  id="right-file"
+                  accept=".json,application/json"
+              /></label>
+            </div>
+            <p class="muted">
+              Uploads require dataset_id, entity_type, source, observed_at,
+              coverage, and records with record_id, name, and source_ref.
+            </p>
+            <button class="primary">Run comparison</button>
+          </form>
+        </details>
+        <div class="run-controls">
+          <label>Saved comparison<select id="runs"></select></label
+          ><label
+            >Show<select id="status">
+              <option value="">All results</option>
+              <option value="possible_match">Needs review</option>
+              <option value="matched">Matched</option>
+              <option value="unmatched">Unmatched</option>
+              <option value="incomplete">Incomplete</option>
+            </select></label
+          ><button id="rerun">Re-run with decisions</button
+          ><a id="download" class="button">Export JSON ↗</a>
+        </div>
+        <div id="run-summary" class="summary"></div>
+        <p class="muted">
+          “Unmatched” means no match found in this dataset. It does not
+          establish attendance, participation, or absence.
+        </p>
+        <div class="workbench">
+          <div>
+            <div id="matches" class="rows"></div>
+            <div id="match-pages" class="pagination"></div>
+          </div>
+          <aside id="match-detail" class="detail">
+            <div class="empty">
+              <h2>Review a candidate.</h2>
+              <p>Select a result to compare the original records.</p>
+            </div>
+          </aside>
+        </div>
+      </section>
+      <section id="history" class="view" hidden>
+        <div class="intro">
+          <div>
+            <h1>Evidence changes.<br /><em>The trail stays.</em></h1>
+            <p>
+              Inspect retained imports and the record changes captured with each
+              snapshot.
+            </p>
+          </div>
+        </div>
+        <div id="snapshots"></div>
+        <div id="changes"></div>
+      </section>
+    </main>
+  </body>
+</html>
