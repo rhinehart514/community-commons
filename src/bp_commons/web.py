@@ -7,6 +7,8 @@ from flask import Flask, request, jsonify, abort
 from werkzeug.exceptions import HTTPException
 from .store import Commons
 from .reviews import Reconciliation
+from .workspaces import Workspaces, discover
+from .paths import paths
 
 
 def create_app(database, audit_database):
@@ -153,5 +155,55 @@ def create_app(database, audit_database):
             if row is None:
                 raise KeyError(response_id)
             return app.response_class(row[0], mimetype='application/json', headers={'Content-Disposition': f'attachment; filename="evidence-{response_id}.json"'})
+
+    workspace_path = Path(audit_database).with_name('workspaces.sqlite')
+
+    @app.get('/api/workspaces')
+    def workspaces():
+        with Workspaces(workspace_path) as work:
+            return jsonify(work.list())
+
+    @app.post('/api/workspaces')
+    def create_workspace():
+        with Workspaces(workspace_path) as work:
+            return work.create(body().get('name'))
+
+    @app.get('/api/discover')
+    def discovery():
+        with Workspaces(workspace_path) as work, Commons(database) as store, Enrichment(evidence_path) as evidence:
+            return discover(store, evidence, work.records(request.args.get('workspace', 'personal')), request.args.get('q', ''), request.args.get('collector') or None, request.args.get('mode', 'all'), int(request.args.get('offset', 0)))
+
+    @app.get('/api/workspaces/<workspace>/profiles/<profile_id>')
+    def annotation(workspace, profile_id):
+        with Workspaces(workspace_path) as work:
+            return {'current': work.records(workspace).get(profile_id, {}), 'history': work.history(workspace, profile_id)}
+
+    @app.post('/api/workspaces/<workspace>/profiles/<profile_id>')
+    def save_annotation(workspace, profile_id):
+        with Commons(database) as store:
+            store.profile(profile_id)
+        with Workspaces(workspace_path) as work:
+            return work.save(workspace, profile_id, body())
+
+    @app.get('/api/workspaces/<workspace>/export')
+    def export_workspace(workspace):
+        with Workspaces(workspace_path) as work, Commons(database) as store:
+            rows = []
+            for profile_id, state in work.records(workspace).items():
+                if state['selection'] != 'shortlisted':
+                    continue
+                try:
+                    profile = store.profile(profile_id)['profile']
+                except KeyError:
+                    profile = None
+                rows.append({'profile_id': profile_id, 'profile': profile, 'workspace_record': state})
+            response = jsonify({'workspace': workspace, 'records': rows})
+            response.headers['Content-Disposition'] = 'attachment; filename="shortlist.json"'
+            return response
+
+    @app.get('/api/paths')
+    def evidence_paths():
+        with Commons(database) as store:
+            return paths(store, request.args['source'], request.args['target'])
 
     return app

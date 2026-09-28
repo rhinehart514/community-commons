@@ -7,13 +7,32 @@ projects, resources, and their relationships. Buffalo Projects is its first
 intended consumer. The engine belongs in this repository; application-specific
 interfaces and workflows belong in consuming applications.
 
+## Use it inside your application
+
+Community Commons is a Python library and a set of JSON-producing commands.
+Buffalo Projects and other consumers keep their own user experience. The web
+interface below is an optional local evidence inspector, not a required product
+or hosted destination.
+
+```python
+from bp_commons import Commons, Enrichment, discover
+
+with Commons("data/commons.sqlite") as records, Enrichment("data/enrichment.sqlite") as evidence:
+    results = discover(records, evidence, {}, query="robotics")
+```
+
+Consumers can supply their own private annotations, or use the optional local
+workspace store. Source discovery, history filtering, shortlist export, and
+bounded evidence-path queries work without the browser. See the
+[integration contract and runnable example](docs/integration.md).
+
 ## Try it without collecting anyone's data
 
 ```sh
 git clone https://github.com/rhinehart514/community-commons.git
 cd community-commons
 python3 -m venv .venv
-.venv/bin/python -m pip install -e .
+.venv/bin/python -m pip install -e ".[web]"
 .venv/bin/python examples/demo.py
 .venv/bin/bp-commons --db data/demo/commons.sqlite serve --audit-db data/demo/reconciliation.sqlite
 ```
@@ -44,7 +63,7 @@ service. The UI has an **Enrichment & movement** view for inspecting results.
 From this repository, install the package and start the workbench:
 
 ```sh
-.venv/bin/python -m pip install -e .
+.venv/bin/python -m pip install -e ".[web]"
 .venv/bin/bp-commons serve
 ```
 
@@ -100,7 +119,7 @@ Python 3.11+ with SQLite FTS5 is required. RapidFuzz provides fuzzy name candida
 
 ```sh
 python3 -m venv .venv
-.venv/bin/python -m pip install -e .
+.venv/bin/python -m pip install -e ".[web]"
 .venv/bin/bp-commons import ../regional-talent-research/collection-2026-09-25/deliverables
 .venv/bin/bp-commons refresh ../regional-talent-research/collection-2026-09-25/deliverables
 .venv/bin/bp-commons history

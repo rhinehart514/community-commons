@@ -83,8 +83,10 @@ wrong; no automatic identity merge is performed.
 
 - Public biography/ORCID adapters with source-specific dates and coverage.
 - Human-confirmed relocation claims and contradiction review.
-- Workspace-scoped contacts, participation, and availability overlays.
-- Cross-source entity grouping and explained multi-hop relationship queries.
+- Availability declarations; private known/contacted/participated annotations are
+  now supported through the optional workspace library.
+- Cross-source entity grouping; bounded paths through imported shared entities
+  are now available through the library and CLI.
 - Needs-to-capabilities ranking with a labeled relevance benchmark.
 - Reusable typed model extraction through Jev after deterministic fixtures exist.
 

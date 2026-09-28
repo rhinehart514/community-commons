@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS responses (
 CREATE TABLE IF NOT EXISTS claims (
  response_id INTEGER NOT NULL REFERENCES responses(id), subject TEXT NOT NULL,
  predicate TEXT NOT NULL, value TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS responses_job ON responses(job_id,id);
+CREATE INDEX IF NOT EXISTS claims_response ON claims(response_id);
 CREATE INDEX IF NOT EXISTS claims_subject ON claims(subject,predicate);
 '''
 PROVIDERS = ('openalex-author', 'openalex-institution', 'github-profile', 'github-repos')

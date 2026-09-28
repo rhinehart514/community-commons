@@ -64,3 +64,17 @@ residence decisions. The same commands accept any region's institution IDs.
 
 `web.py` exposes the local UI and JSON query endpoints; it does not start workers
 on page load. `docs/enrichment.md` specifies the operational boundaries.
+
+## Headless consumers
+
+The public Python exports are `Commons`, `Enrichment`, `Reconciliation`,
+`Workspaces`, `discover`, and `paths`. `workspaces.py` keeps optional consumer
+annotations and their history in a separate private store. `discover` can instead
+accept a mapping from a consumer's existing database. It combines source retrieval
+and latest enriched evidence, then applies consumer filters before pagination.
+`paths.py` traverses only explicit object URLs linked to resolved source profiles;
+returned paths contain supporting evidence and do not assert social connections.
+
+Flask is an optional `web` extra. The local inspector and HTTP endpoints are
+adapters over the library, not the product's destination. Hosted consumers own
+identity, authorization, and their interface. See `integration.md` for contracts.

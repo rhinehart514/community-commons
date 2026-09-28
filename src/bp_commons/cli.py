@@ -82,8 +82,55 @@ def main():
     enrich.add_argument("--max-seconds", type=int, default=300)
     enrich.add_argument("--interval", type=float, default=2)
     enrich.add_argument("--watch", action="store_true", help="Wait for due work within the same time/request budget")
+    discovery = commands.add_parser("discover", help="Headless source and enriched-evidence discovery")
+    discovery.add_argument("query", nargs="?", default="")
+    discovery.add_argument("--workspace", default="personal")
+    discovery.add_argument("--workspace-db", default="data/workspaces.sqlite")
+    discovery.add_argument("--evidence-db", default="data/enrichment.sqlite")
+    discovery.add_argument("--collector")
+    discovery.add_argument("--mode", choices=["all", "new", "shortlisted", "dismissed"], default="all")
+    discovery.add_argument("--offset", type=int, default=0)
+    workspace = commands.add_parser("workspace", help="Optional private consumer records")
+    workspace.add_argument("action", choices=["list", "create", "show", "save"])
+    workspace.add_argument("--workspace-db", default="data/workspaces.sqlite")
+    workspace.add_argument("--workspace", default="personal")
+    workspace.add_argument("--name")
+    workspace.add_argument("--profile")
+    workspace.add_argument("--input", help="JSON file with independent markers, selection, reviewer and reason")
+    path = commands.add_parser("paths", help="Inspect a bounded path through documented shared entities")
+    path.add_argument("source")
+    path.add_argument("target")
+    path.add_argument("--max-hops", type=int, default=4)
     args = parser.parse_args()
     try:
+        if args.command == "paths":
+            from .paths import paths
+            with Commons(args.db) as store:
+                result = paths(store, args.source, args.target, args.max_hops)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return
+        if args.command in ("discover", "workspace"):
+            from pathlib import Path
+            from .workspaces import Workspaces, discover
+            from .enrichment import Enrichment
+            with Workspaces(args.workspace_db) as work:
+                if args.command == "discover":
+                    with Commons(args.db) as store, Enrichment(args.evidence_db) as evidence:
+                        result = discover(store, evidence, work.records(args.workspace), args.query, args.collector, args.mode, args.offset)
+                elif args.action == "list":
+                    result = work.list()
+                elif args.action == "create":
+                    result = work.create(args.name)
+                elif args.action == "show":
+                    result = work.records(args.workspace)
+                else:
+                    if not args.profile or not args.input:
+                        raise ValueError('Saving requires --profile and --input')
+                    with Commons(args.db) as store:
+                        store.profile(args.profile)
+                    result = work.save(args.workspace, args.profile, json.loads(Path(args.input).read_text()))
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return
         if args.command == "enrich":
             from .enrichment import Enrichment
             with Enrichment(args.evidence_db) as evidence:
