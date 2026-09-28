@@ -3,25 +3,28 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BP Commons · Evidence workbench</title>
+    <title>Community Commons · Buffalo Projects</title>
     <link rel="stylesheet" href="/static/style.css" />
     <script defer src="/static/app.js"></script>
   </head>
   <body>
     <aside class="rail">
-      <a class="brand" href="/">bp<span>commons</span></a>
+      <a class="brand" href="/">community<br /><span>commons</span></a>
       <p class="eyebrow">THE EVIDENCE WORKBENCH</p>
       <nav aria-label="Main navigation">
         <button data-view="explore" class="active">
           01 <span>Explore people</span></button
         ><button data-view="compare">02 <span>Compare & review</span></button
         ><button data-view="history">03 <span>Evidence history</span></button>
+        <button data-view="enrichment">
+          04 <span>Enrichment & movement</span>
+        </button>
       </nav>
       <div class="rail-bottom">
         <span class="dot"></span> Local workspace
         <p>
           Source records. Traceable decisions.<br />A Buffalo Projects
-          experiment.
+          open-source project.
         </p>
       </div>
     </aside>
@@ -29,7 +32,7 @@
       <header>
         <span id="section-label" class="eyebrow">01 / EXPLORE</span
         ><span class="workspace"
-          >BP COMMONS <span> / </span> PRIVATE · LOCAL</span
+          >COMMUNITY COMMONS <span> / </span> PRIVATE · LOCAL</span
         >
       </header>
       <div id="notice" role="status" hidden></div>
@@ -159,6 +162,52 @@
         </div>
         <div id="snapshots"></div>
         <div id="changes"></div>
+      </section>
+      <section id="enrichment" class="view" hidden>
+        <div class="intro">
+          <div>
+            <h1>Follow the work.<br /><em>See what changes.</em></h1>
+            <p>
+              Public source claims collected by the enrichment worker. Research
+              topics and repository metadata are signals, not verified skills.
+            </p>
+          </div>
+        </div>
+        <div id="enrichment-stats" class="summary"></div>
+        <form id="claim-search" class="searchbar">
+          <label class="search-label"
+            >Search enriched evidence<input
+              id="claim-query"
+              type="search"
+              placeholder="Topic, organization, language, or source ID" /></label
+          ><button class="primary">Search claims</button>
+        </form>
+        <div id="claim-results"></div>
+        <div id="claim-pages" class="pagination"></div>
+        <details>
+          <summary>
+            Find later affiliations outside an institution group
+          </summary>
+          <form id="transition-search">
+            <label
+              >Origin institution IDs, separated by commas<input
+                id="origin-institutions"
+                placeholder="I63190737"
+                required
+            /></label>
+            <p class="muted">
+              Supply all institutions in your region. Results indicate later
+              publication affiliations outside that set, not confirmed moves or
+              current residence.
+            </p>
+            <button class="primary">Find candidates</button>
+          </form>
+          <div id="transition-results"></div>
+        </details>
+        <details>
+          <summary>Worker status and errors</summary>
+          <pre id="worker-status"></pre>
+        </details>
       </section>
     </main>
   </body>

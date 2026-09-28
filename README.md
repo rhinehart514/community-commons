@@ -1,11 +1,43 @@
-# BP Commons
+# Buffalo Projects — Community Commons
 
-Evidence infrastructure for connecting capabilities with needs.
+Open-source infrastructure for collecting public evidence about people, capabilities, organizations, and their histories.
 
 BP Commons is a standalone foundation for understanding people, organizations,
 projects, resources, and their relationships. Buffalo Projects is its first
 intended consumer. The engine belongs in this repository; application-specific
 interfaces and workflows belong in consuming applications.
+
+## Try it without collecting anyone's data
+
+```sh
+git clone https://github.com/rhinehart514/community-commons.git
+cd community-commons
+python3 -m venv .venv
+.venv/bin/python -m pip install -e .
+.venv/bin/python examples/demo.py
+.venv/bin/bp-commons --db data/demo/commons.sqlite serve --audit-db data/demo/reconciliation.sqlite
+```
+
+Open http://127.0.0.1:8765. The demo contains fictional profiles, comparison
+candidates, and affiliation changes. It makes no network requests.
+
+## Enrichment loop
+
+```sh
+.venv/bin/bp-commons enrich seed --limit 100
+.venv/bin/bp-commons enrich run --watch --max-requests 100 --max-seconds 600
+.venv/bin/bp-commons enrich status
+```
+
+Use these commands with your imported evidence store, not the fictional demo.
+The worker collects OpenAlex affiliation histories and topics, GitHub profiles
+and repository signals, and institution locations. It stores raw responses and
+typed claims separately, resumes from a durable queue, retries with backoff,
+and refreshes successful jobs after 30 days. Both time and request budgets are
+mandatory limits with defaults; nothing runs forever or installs a background
+service. The UI has an **Enrichment & movement** view for inspecting results.
+
+[Worker commands, semantics, limitations, and provider references](docs/enrichment.md).
 
 ## Local web interface
 
@@ -77,7 +109,7 @@ python3 -m venv .venv
 .venv/bin/bp-commons stats
 .venv/bin/bp-commons unresolved --limit 5
 .venv/bin/bp-commons search 'computer vision' --limit 5
-.venv/bin/bp-commons search 'Nick Branholm'
+.venv/bin/bp-commons search 'robotics'
 .venv/bin/bp-commons show PERSON_RECORD_ID
 .venv/bin/python -m unittest discover -s tests -v
 ```
@@ -122,9 +154,9 @@ in the separate regional-talent-research directory. Neither collected personal
 records nor third-party source content should become default repository fixtures.
 Tests use fictional records. Source file SHA-256 hashes identify each import.
 
-This repository has local version control and a CI workflow, but has not been
-published and has no license assigned yet. Dataset redistribution rights are
-separate from code licensing.
+The code is open source under the [MIT license](LICENSE). Collected datasets,
+private review records, credentials, and third-party response archives are not
+published. Third-party data retains its own rights and terms.
 
 Read [the vision](docs/vision.md) and [architecture](docs/architecture.md) for the
 larger direction and the next working increments.

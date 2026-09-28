@@ -21,10 +21,11 @@ separate. A plausible collaboration is a hypothesis for participants to evaluate
 
 ## Working increments
 
-The import/query engine and complete-export refresh/history are implemented. Next:
+The import/query engine, snapshot history, pair review, and bounded public-source
+enrichment loop are implemented. Next:
 
-- Add live collector integration and explicit source-completeness status; absence
-  in a refresh must not be mistaken for confirmed withdrawal.
+- Extend the OpenAlex/GitHub collectors to biographies and ORCID with explicit
+  source coverage; absence must not be mistaken for confirmed withdrawal.
 - Extend the implemented pair-review decisions into evaluated entity grouping;
   reviewed same/different/unsure links already preserve original records.
 - Normalize sourced capabilities and needs; validate one matching workflow using

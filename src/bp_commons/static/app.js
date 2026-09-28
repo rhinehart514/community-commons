@@ -424,6 +424,7 @@ for (const button of document.querySelectorAll("[data-view]"))
       await loadRun();
     }
     if (button.dataset.view === "history") await history();
+    if (button.dataset.view === "enrichment") await loadClaims();
   });
 $("#search-form").onsubmit = guard(async (e) => {
   e.preventDefault();
@@ -492,3 +493,68 @@ for (const side of ["left", "right"])
   $("#" + side + "-file").onchange = () => {
     $("#" + side + "-dataset").required = !$("#" + side + "-file").files.length;
   };
+
+async function loadClaims(offset = 0) {
+  const result = await api(
+    "enrichment?" + new URLSearchParams({ q: $("#claim-query").value, offset }),
+  );
+  $("#enrichment-stats").replaceChildren();
+  for (const key of ["responses", "claims", "due"]) {
+    const card = el("div");
+    card.append(el("strong", fmt(result.stats[key])), el("span", key));
+    $("#enrichment-stats").append(card);
+  }
+  $("#worker-status").textContent = JSON.stringify(result.stats, null, 2);
+  const list = $("#claim-results");
+  list.replaceChildren();
+  if (!result.total)
+    list.append(
+      el(
+        "p",
+        "No enriched evidence found. The worker collects claims from queued public sources.",
+        "empty",
+      ),
+    );
+  for (const claim of result.claims) {
+    const item = evidence(
+      claim.subject + " · " + claim.predicate.replaceAll("_", " "),
+      {
+        value: claim.value,
+        source: claim.url,
+        observed: new Date(claim.observed * 1000).toISOString(),
+        sha256: claim.sha256,
+      },
+    );
+    const download = el("a", "Download preserved source response ↗", "button");
+    download.href = "/api/evidence/" + claim.response_id;
+    item.append(download);
+    list.append(item);
+  }
+  paginate($("#claim-pages"), offset, result.total, 50, loadClaims);
+}
+$("#claim-search").onsubmit = guard(async (event) => {
+  event.preventDefault();
+  await busy(event.submitter, () => loadClaims());
+});
+$("#transition-search").onsubmit = guard(async (event) => {
+  event.preventDefault();
+  await busy(event.submitter, async () => {
+    const params = new URLSearchParams();
+    for (const id of $("#origin-institutions")
+      .value.split(",")
+      .map((x) => x.trim())
+      .filter(Boolean))
+      params.append("institution", id);
+    const rows = await api("transitions?" + params);
+    const target = $("#transition-results");
+    target.replaceChildren(
+      el(
+        "p",
+        rows.length +
+          " candidates. No result does not establish that someone stayed.",
+      ),
+    );
+    for (const row of rows)
+      target.append(evidence(row.name + " · later affiliation candidate", row));
+  });
+});

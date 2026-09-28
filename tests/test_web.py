@@ -62,6 +62,22 @@ class WebTests(unittest.TestCase):
         self.assertEqual(saved.status_code, 200)
         self.assertIn('attachment', self.client.get(f'/api/runs/{run_id}?download=1').headers['Content-Disposition'])
 
+    def test_enrichment_api_preserves_source_and_requires_origins(self):
+        from bp_commons.enrichment import Enrichment
+        with Enrichment(self.root / 'enrichment.sqlite') as evidence:
+            evidence.enqueue('github-profile', 'fixture')
+            evidence.step(lambda *_: b'{"login":"fixture","id":123,"location":"Example City"}')
+        data = self.client.get('/api/enrichment?q=Example').json
+        self.assertEqual(data['total'], 1)
+        self.assertEqual(data['claims'][0]['predicate'], 'self_reported_location')
+        response_id = data['claims'][0]['response_id']
+        response = self.client.get('/api/evidence/' + str(response_id))
+        self.assertEqual(response.json['login'], 'fixture')
+        self.assertIn('attachment', response.headers['Content-Disposition'])
+        self.assertEqual(self.client.get('/api/transitions').status_code, 400)
+        self.assertEqual(self.client.get('/api/transitions?institution=I1').json, [])
+        self.assertEqual(self.client.get('/api/evidence/999').status_code, 404)
+
     def test_validation_and_cross_origin_protection(self):
         self.assertEqual(self.client.post('/api/compare', json={}).status_code, 403)
         self.assertEqual(self.client.post('/api/compare', json={}, headers={'X-BP-Commons': 'workbench', 'Origin': 'https://foreign.example'}).status_code, 403)

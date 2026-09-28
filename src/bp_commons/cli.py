@@ -71,8 +71,34 @@ def main():
     serve = commands.add_parser("serve", help="Open the local web workbench")
     serve.add_argument("--port", type=int, default=8765)
     serve.add_argument("--audit-db", default="data/reconciliation.sqlite")
+    enrich = commands.add_parser("enrich", help="Durable public evidence queue and bounded worker")
+    enrich.add_argument("action", choices=["seed", "run", "status", "claims", "transitions"])
+    enrich.add_argument("--evidence-db", default="data/enrichment.sqlite")
+    enrich.add_argument("--limit", type=int, default=50)
+    enrich.add_argument("--offset", type=int, default=0)
+    enrich.add_argument("--query", default="")
+    enrich.add_argument("--institution", action="append", default=[])
+    enrich.add_argument("--max-requests", type=int, default=10)
+    enrich.add_argument("--max-seconds", type=int, default=300)
+    enrich.add_argument("--interval", type=float, default=2)
+    enrich.add_argument("--watch", action="store_true", help="Wait for due work within the same time/request budget")
     args = parser.parse_args()
     try:
+        if args.command == "enrich":
+            from .enrichment import Enrichment
+            with Enrichment(args.evidence_db) as evidence:
+                if args.action == "seed":
+                    result = evidence.seed(args.db, args.limit)
+                elif args.action == "run":
+                    result = evidence.run(args.max_requests, args.max_seconds, args.interval, args.watch)
+                elif args.action == "claims":
+                    result = evidence.claims(args.query, args.limit, args.offset)
+                elif args.action == "transitions":
+                    result = evidence.transitions(args.institution)
+                else:
+                    result = evidence.stats()
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return
         if args.command == "serve":
             from .web import create_app
             create_app(args.db, args.audit_db).run(host="127.0.0.1", port=args.port, debug=False)

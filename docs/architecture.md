@@ -51,3 +51,16 @@ database. `external.py` retrieves public organization evidence on demand.
 
 This is pairwise record reconciliation, not a universal entity graph. No application
 workflow terms, transitive entity merges, or inferred social connections are added.
+
+## Enrichment
+
+`enrichment.py` owns a separate SQLite evidence store: durable jobs, links to
+source profiles, immutable HTTP response archives, and typed claims. Fixed API
+endpoints accept validated identifiers. No arbitrary URL fetching or private
+consumer records enter the worker. Provider identities remain source-scoped.
+Claim search uses the latest successful response; history stays available by
+response ID. Publication affiliation transitions are hypotheses, not identity or
+residence decisions. The same commands accept any region's institution IDs.
+
+`web.py` exposes the local UI and JSON query endpoints; it does not start workers
+on page load. `docs/enrichment.md` specifies the operational boundaries.

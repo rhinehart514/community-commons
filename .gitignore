@@ -4,3 +4,9 @@ __pycache__/
 data/*
 !data/.gitkeep
 .DS_Store
+.env
+.env.*
+*.sqlite
+*.sqlite-*
+build/
+dist/

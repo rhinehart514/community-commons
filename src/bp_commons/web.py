@@ -1,5 +1,7 @@
 """Loopback-only workbench over the evidence and reconciliation stores."""
 import json
+from pathlib import Path
+from .enrichment import Enrichment
 from urllib.parse import urlsplit
 from flask import Flask, request, jsonify, abort
 from werkzeug.exceptions import HTTPException
@@ -131,5 +133,25 @@ def create_app(database, audit_database):
                 raise KeyError(run_id)
             result = audit.compare(audit.dataset(row[0]), audit.dataset(row[1]))
             return {'run_id': result['run_id']}
+
+    evidence_path = Path(audit_database).with_name('enrichment.sqlite')
+
+    @app.get('/api/enrichment')
+    def enrichment():
+        with Enrichment(evidence_path) as evidence:
+            return {**evidence.claims(request.args.get('q', ''), offset=int(request.args.get('offset', 0))), 'stats': evidence.stats()}
+
+    @app.get('/api/transitions')
+    def transitions():
+        with Enrichment(evidence_path) as evidence:
+            return jsonify(evidence.transitions(request.args.getlist('institution')))
+
+    @app.get('/api/evidence/<int:response_id>')
+    def raw_evidence(response_id):
+        with Enrichment(evidence_path) as evidence:
+            row = evidence.db.execute('SELECT raw FROM responses WHERE id=?', (response_id,)).fetchone()
+            if row is None:
+                raise KeyError(response_id)
+            return app.response_class(row[0], mimetype='application/json', headers={'Content-Disposition': f'attachment; filename="evidence-{response_id}.json"'})
 
     return app

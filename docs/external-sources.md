@@ -44,3 +44,6 @@ of all attributes supplied by either service.
   resolve before adding requests. Existing source-provided ORCID IDs are supported.
 
 No Exa, Firecrawl, paid enrichment calls, private CRM uploads, or outreach are used.
+
+The bounded [enrichment worker](enrichment.md) also integrates OpenAlex author
+histories and topics, GitHub public profiles, and owned public repositories.
